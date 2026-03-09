@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VitalAxis — Health Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --surface: #ffffff;
+    --surface2: #edeae4;
+    --ink: #1a1714;
+    --ink2: #6b6560;
+    --ink3: #a09b95;
+    --accent: #1c6e4a;
+    --accent2: #e8f5ef;
+    --danger: #c0392b;
+    --danger2: #fdf0ee;
+    --warn: #d4860a;
+    --warn2: #fdf5e6;
+    --blue: #1a4f8a;
+    --blue2: #eaf0f9;
+    --border: #ddd9d2;
+    --card-shadow: 0 1px 4px rgba(26,23,20,0.07), 0 4px 16px rgba(26,23,20,0.04);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px;
+    background: var(--ink);
+    color: #f4f2ee;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    padding: 0 0 24px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Thin custom scrollbar inside sidebar */
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 99px; }
+  .sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    margin-bottom: 12px;
+  }
+  .logo-mark {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: #fff;
+    letter-spacing: -.3px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.4);
+    margin-top: 4px;
+    padding-left: 42px;
+  }
+  .nav-section {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+  .nav-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.3);
+    padding: 12px 12px 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 400;
+    color: rgba(255,255,255,.65);
+    cursor: pointer;
+    transition: all .18s;
+    margin-bottom: 2px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .nav-item:active { background: rgba(255,255,255,.12); color: #fff; }
+  .nav-item.active { background: rgba(28,110,74,.35); color: #5fe6a0; }
+  .nav-item .icon { font-size: 15px; width: 20px; text-align: center; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--danger);
+    color: #fff;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    padding: 1px 6px;
+    border-radius: 99px;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 0 12px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding-top: 16px;
+  }
+  .user-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background .18s;
+  }
+  .user-pill:hover { background: rgba(255,255,255,.07); }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #2ecc71, #1a4f8a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: #fff;
+    flex-shrink: 0;
+  }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 13px; font-weight: 500; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-role { font-size: 11px; color: rgba(255,255,255,.4); font-family: 'DM Mono', monospace; }
+
+  /* ── MOBILE TOPBAR ── */
+  .topbar {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 58px;
+    background: var(--ink);
+    z-index: 200;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+  .topbar-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: #fff;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hamburger {
+    background: none; border: none;
+    color: #fff; font-size: 20px;
+    cursor: pointer; padding: 6px;
+    line-height: 1;
+  }
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 99;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .topstrip {
+    position: sticky; top: 0;
+    background: rgba(244,242,238,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+  }
+  .page-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .page-subtitle {
+    font-size: 12px;
+    color: var(--ink3);
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+  }
+  .topstrip-right { display: flex; align-items: center; gap: 10px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Instrument Sans', sans-serif;
+    cursor: pointer;
+    border: none;
+    transition: all .18s;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink2);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--surface2); }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #155a3a; }
+  .notif-btn {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    position: relative;
+    color: var(--ink2);
+    transition: background .18s;
+  }
+  .notif-btn:hover { background: var(--surface2); }
+  .notif-dot {
+    position: absolute; top: 7px; right: 7px;
+    width: 7px; height: 7px;
+    background: var(--danger);
+    border-radius: 50%;
+    border: 1.5px solid var(--bg);
+  }
+
+  /* ── CONTENT ── */
+  .content { padding: 28px 32px 48px; }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 24px rgba(26,23,20,.1); }
+  .kpi-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 10px;
+  }
+  .kpi-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .kpi-delta {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .delta-up { color: var(--accent); }
+  .delta-down { color: var(--danger); }
+  .kpi-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  /* ── CHARTS ROW ── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+  }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .card-sub {
+    font-size: 11px;
+    color: var(--ink3);
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+  }
+  .card-body { padding: 20px; }
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .5px;
+    padding: 3px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+  .tag-green { background: var(--accent2); color: var(--accent); }
+  .tag-red { background: var(--danger2); color: var(--danger); }
+  .tag-blue { background: var(--blue2); color: var(--blue); }
+  .tag-warn { background: var(--warn2); color: var(--warn); }
+
+  /* ── SVG CHARTS ── */
+  .chart-wrap { width: 100%; position: relative; }
+  svg.chart { width: 100%; }
+
+  /* ── DONUT ── */
+  .donut-wrap {
+    display: flex; align-items: center; justify-content: center;
+    gap: 24px;
+    padding: 8px 0;
+  }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-val { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink2); margin-left: auto; padding-left: 12px; }
+
+  /* ── BOTTOM ROW ── */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* ── PATIENT TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink3);
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  tbody tr { border-bottom: 1px solid var(--surface2); transition: background .15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 11px 12px; color: var(--ink); }
+  .pt-name { font-weight: 500; }
+  .pt-id { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+  /* ── ALERTS ── */
+  .alert-list { display: flex; flex-direction: column; gap: 10px; }
+  .alert-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+    font-size: 13px;
+    animation: fadeIn .4s ease both;
+  }
+  .alert-item.critical { background: var(--danger2); border-color: rgba(192,57,43,.2); }
+  .alert-item.warning { background: var(--warn2); border-color: rgba(212,134,10,.2); }
+  .alert-item.info { background: var(--blue2); border-color: rgba(26,79,138,.2); }
+  .alert-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+  .alert-text strong { display: block; font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .alert-text span { color: var(--ink2); font-size: 12px; }
+  .alert-time { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink3); white-space: nowrap; padding-left: 8px; }
+
+  /* ── MINI SPARKLINE ── */
+  .spark-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .spark-label { font-size: 12.5px; color: var(--ink2); flex: 1; }
+  .spark-svg { width: 80px; height: 28px; }
+  .spark-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--ink); width: 40px; text-align: right; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes countUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .kpi-card { animation: fadeIn .5s ease both; }
+  .kpi-card:nth-child(1) { animation-delay: .05s; }
+  .kpi-card:nth-child(2) { animation-delay: .1s; }
+  .kpi-card:nth-child(3) { animation-delay: .15s; }
+  .kpi-card:nth-child(4) { animation-delay: .2s; }
+  .card { animation: fadeIn .55s ease both; animation-delay: .25s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+    .bottom-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .topbar { display: flex; }
+    .main { margin-left: 0; padding-top: 58px; }
+    .topstrip { display: none; }
+    .content { padding: 18px 16px 40px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .kpi-value { font-size: 26px; }
+    .charts-row, .bottom-row { grid-template-columns: 1fr; gap: 12px; }
+    .card-head { padding: 14px 16px 10px; }
+    .card-body { padding: 14px 16px; }
+    .donut-wrap { flex-direction: column; gap: 16px; }
+  }
+  @media (max-width: 420px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi-card { padding: 14px; }
+    .kpi-value { font-size: 22px; }
+  }
+
+  /* ── PROGRESS BARS ── */
+  .prog-row { margin-bottom: 14px; }
+  .prog-head { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px; }
+  .prog-label { color: var(--ink2); }
+  .prog-pct { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink); }
+  .prog-track { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+  .section-divider { height: 1px; background: var(--border); margin: 0 0 14px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <div class="logo-icon">🫀</div>
+        VitalAxis
+      </div>
+      <div class="logo-sub">Health Analytics Platform</div>
+    </div>
+
+    <nav class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active"><span class="icon">⬡</span> Dashboard</div>
+      <div class="nav-item"><span class="icon">📊</span> Analytics</div>
+      <div class="nav-item"><span class="icon">🔔</span> Alerts <span class="nav-badge">4</span></div>
+    </nav>
+
+    <nav class="nav-section">
+      <div class="nav-label">Clinical</div>
+      <div class="nav-item"><span class="icon">👤</span> Patients</div>
+      <div class="nav-item"><span class="icon">🏥</span> Wards</div>
+      <div class="nav-item"><span class="icon">💊</span> Pharmacy</div>
+      <div class="nav-item"><span class="icon">🧬</span> Lab Results</div>
+    </nav>
+
+    <nav class="nav-section">
+      <div class="nav-label">Operations</div>
+      <div class="nav-item"><span class="icon">📅</span> Scheduling</div>
+      <div class="nav-item"><span class="icon">🗂</span> Records</div>
+      <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="avatar">DR</div>
+        <div class="user-info">
+          <div class="user-name">Dr. R. Okonkwo</div>
+          <div class="user-role">Chief of Medicine</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile topbar -->
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="topbar-logo"><span>🫀</span> VitalAxis</div>
+    <button class="hamburger" style="font-size:18px">🔔</button>
+  </div>
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topstrip">
+      <div>
+        <div class="page-title">Clinical Dashboard</div>
+        <div class="page-subtitle">LIVE · Updated 2 min ago · Q2 2025</div>
+      </div>
+      <div class="topstrip-right">
+        <button class="btn btn-ghost">⬇ Export</button>
+        <div class="notif-btn">🔔<div class="notif-dot"></div></div>
+        <button class="btn btn-primary">+ Admit Patient</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- KPI Row -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-bar" style="background: linear-gradient(90deg,#1c6e4a,#2ecc71)"></div>
+          <div class="kpi-label">Total Patients</div>
+          <div class="kpi-value" id="kpi1">1,284</div>
+          <div class="kpi-delta delta-up">▲ 3.2% <span style="color:var(--ink3)">vs last month</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-bar" style="background: linear-gradient(90deg,#1a4f8a,#3498db)"></div>
+          <div class="kpi-label">Bed Occupancy</div>
+          <div class="kpi-value">87<span style="font-size:18px">%</span></div>
+          <div class="kpi-delta delta-down">▼ 1.1% <span style="color:var(--ink3)">vs last week</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-bar" style="background: linear-gradient(90deg,#d4860a,#f1c40f)"></div>
+          <div class="kpi-label">Avg. Stay (days)</div>
+          <div class="kpi-value">4.7</div>
+          <div class="kpi-delta delta-up">▲ 0.3d <span style="color:var(--ink3)">Q/Q</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-bar" style="background: linear-gradient(90deg,#c0392b,#e74c3c)"></div>
+          <div class="kpi-label">Critical Cases</div>
+          <div class="kpi-value">23</div>
+          <div class="kpi-delta delta-down">▼ 2 <span style="color:var(--ink3)">from yesterday</span></div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-row">
+        <!-- Line Chart -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Admissions & Discharges</div>
+              <div class="card-sub">Last 14 days · Daily counts</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <span class="tag tag-green">● Admissions</span>
+              <span class="tag tag-blue">● Discharges</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap">
+              <svg class="chart" viewBox="0 0 520 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Grid lines -->
+                <line x1="0" y1="140" x2="520" y2="140" stroke="#ddd9d2" stroke-width="1"/>
+                <line x1="0" y1="105" x2="520" y2="105" stroke="#ddd9d2" stroke-width=".6" stroke-dasharray="4,4"/>
+                <line x1="0" y1="70" x2="520" y2="70" stroke="#ddd9d2" stroke-width=".6" stroke-dasharray="4,4"/>
+                <line x1="0" y1="35" x2="520" y2="35" stroke="#ddd9d2" stroke-width=".6" stroke-dasharray="4,4"/>
+                <!-- Y labels -->
+                <text x="0" y="144" font-size="9" fill="#a09b95" font-family="DM Mono">0</text>
+                <text x="0" y="109" font-size="9" fill="#a09b95" font-family="DM Mono">25</text>
+                <text x="0" y="74" font-size="9" fill="#a09b95" font-family="DM Mono">50</text>
+                <text x="0" y="39" font-size="9" fill="#a09b95" font-family="DM Mono">75</text>
+                <!-- Admissions area -->
+                <path d="M20,90 L57,75 L94,82 L131,60 L168,68 L205,55 L242,62 L279,48 L316,58 L353,44 L390,52 L427,40 L464,47 L500,38"
+                  stroke="#1c6e4a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20,90 L57,75 L94,82 L131,60 L168,68 L205,55 L242,62 L279,48 L316,58 L353,44 L390,52 L427,40 L464,47 L500,38 L500,140 L20,140Z"
+                  fill="url(#greenGrad)" opacity=".18"/>
+                <!-- Discharges area -->
+                <path d="M20,100 L57,92 L94,98 L131,85 L168,90 L205,78 L242,84 L279,72 L316,80 L353,68 L390,74 L427,62 L464,70 L500,60"
+                  stroke="#1a4f8a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6,3"/>
+                <!-- Dots -->
+                <circle cx="279" cy="48" r="4" fill="#1c6e4a" stroke="#fff" stroke-width="2"/>
+                <circle cx="353" cy="44" r="4" fill="#1c6e4a" stroke="#fff" stroke-width="2"/>
+                <!-- X Labels -->
+                <text x="14" y="158" font-size="9" fill="#a09b95" font-family="DM Mono" text-anchor="middle">Jun 1</text>
+                <text x="168" y="158" font-size="9" fill="#a09b95" font-family="DM Mono" text-anchor="middle">Jun 8</text>
+                <text x="316" y="158" font-size="9" fill="#a09b95" font-family="DM Mono" text-anchor="middle">Jun 14</text>
+                <text x="500" y="158" font-size="9" fill="#a09b95" font-family="DM Mono" text-anchor="middle">Today</text>
+                <defs>
+                  <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#1c6e4a"/>
+                    <stop offset="100%" stop-color="#1c6e4a" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Donut -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Dept. Capacity</div>
+              <div class="card-sub">Current utilization</div>
+            </div>
+            <span class="tag tag-warn">87% full</span>
+          </div>
+          <div class="card-body">
+            <div class="donut-wrap">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="46" fill="none" stroke="#edeae4" stroke-width="16"/>
+                <!-- ICU 28% -->
+                <circle cx="60" cy="60" r="46" fill="none" stroke="#c0392b" stroke-width="16"
+                  stroke-dasharray="81 208" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+                <!-- Cardio 22% -->
+                <circle cx="60" cy="60" r="46" fill="none" stroke="#1a4f8a" stroke-width="16"
+                  stroke-dasharray="63 226" stroke-dashoffset="-81" transform="rotate(-90 60 60)"/>
+                <!-- Gen. Med 35% -->
+                <circle cx="60" cy="60" r="46" fill="none" stroke="#1c6e4a" stroke-width="16"
+                  stroke-dasharray="101 188" stroke-dashoffset="-144" transform="rotate(-90 60 60)"/>
+                <!-- Peds 15% -->
+                <circle cx="60" cy="60" r="46" fill="none" stroke="#d4860a" stroke-width="16"
+                  stroke-dasharray="43 246" stroke-dashoffset="-245" transform="rotate(-90 60 60)"/>
+                <text x="60" y="56" text-anchor="middle" font-family="DM Serif Display" font-size="20" fill="#1a1714">87%</text>
+                <text x="60" y="70" text-anchor="middle" font-family="DM Mono" font-size="8" fill="#a09b95">occupied</text>
+              </svg>
+              <div class="donut-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div> ICU <span class="legend-val">28%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#1a4f8a"></div> Cardio <span class="legend-val">22%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#1c6e4a"></div> Gen. Med <span class="legend-val">35%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#d4860a"></div> Peds <span class="legend-val">15%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row -->
+      <div class="bottom-row">
+        <!-- Patient Table -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Recent Admissions</div>
+              <div class="card-sub">Today, all departments</div>
+            </div>
+            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px">View all</button>
+          </div>
+          <div class="card-body" style="padding: 0 0 4px;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Patient</th>
+                    <th>Ward</th>
+                    <th>Status</th>
+                    <th>Vitals</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="pt-name">A. Mensah</div>
+                      <div class="pt-id">#PT-00481</div>
+                    </td>
+                    <td><span class="tag tag-red">ICU</span></td>
+                    <td><span class="tag tag-red">Critical</span></td>
+                    <td>
+                      <svg class="spark-svg" viewBox="0 0 80 28">
+                        <polyline points="0,20 14,18 28,14 38,22 48,6 60,16 72,12 80,10" fill="none" stroke="#c0392b" stroke-width="1.5" stroke-linejoin="round"/>
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="pt-name">F. Osei</div>
+                      <div class="pt-id">#PT-00479</div>
+                    </td>
+                    <td><span class="tag tag-blue">Cardio</span></td>
+                    <td><span class="tag tag-warn">Monitor</span></td>
+                    <td>
+                      <svg class="spark-svg" viewBox="0 0 80 28">
+                        <polyline points="0,16 14,14 28,16 40,12 52,14 64,11 80,13" fill="none" stroke="#1a4f8a" stroke-width="1.5" stroke-linejoin="round"/>
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="pt-name">B. Asante</div>
+                      <div class="pt-id">#PT-00477</div>
+                    </td>
+                    <td><span class="tag tag-green">Gen. Med</span></td>
+                    <td><span class="tag tag-green">Stable</span></td>
+                    <td>
+                      <svg class="spark-svg" viewBox="0 0 80 28">
+                        <polyline points="0,14 16,13 30,15 44,12 58,14 72,13 80,12" fill="none" stroke="#1c6e4a" stroke-width="1.5" stroke-linejoin="round"/>
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="pt-name">E. Quartey</div>
+                      <div class="pt-id">#PT-00476</div>
+                    </td>
+                    <td><span class="tag tag-green">Gen. Med</span></td>
+                    <td><span class="tag tag-green">Stable</span></td>
+                    <td>
+                      <svg class="spark-svg" viewBox="0 0 80 28">
+                        <polyline points="0,15 14,14 28,16 42,13 56,14 70,12 80,14" fill="none" stroke="#1c6e4a" stroke-width="1.5" stroke-linejoin="round"/>
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="pt-name">N. Darko</div>
+                      <div class="pt-id">#PT-00474</div>
+                    </td>
+                    <td><span class="tag" style="background:#f3eef9;color:#7c3aed">Peds</span></td>
+                    <td><span class="tag tag-warn">Observe</span></td>
+                    <td>
+                      <svg class="spark-svg" viewBox="0 0 80 28">
+                        <polyline points="0,12 14,14 28,11 42,15 54,10 68,13 80,11" fill="none" stroke="#d4860a" stroke-width="1.5" stroke-linejoin="round"/>
+                      </svg>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right panel: Alerts + Stats -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Alerts -->
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Active Alerts</div>
+                <div class="card-sub">Requires attention</div>
+              </div>
+              <span class="tag tag-red">4 new</span>
+            </div>
+            <div class="card-body">
+              <div class="alert-list">
+                <div class="alert-item critical">
+                  <div class="alert-icon">🚨</div>
+                  <div class="alert-text">
+                    <strong>ICU Bed Shortage</strong>
+                    <span>Only 2 ICU beds remaining. Escalate immediately.</span>
+                  </div>
+                  <div class="alert-time">2m ago</div>
+                </div>
+                <div class="alert-item warning">
+                  <div class="alert-icon">⚠️</div>
+                  <div class="alert-text">
+                    <strong>Lab Queue Backlog</strong>
+                    <span>38 pending results exceeds 4hr SLA threshold.</span>
+                  </div>
+                  <div class="alert-time">17m ago</div>
+                </div>
+                <div class="alert-item info">
+                  <div class="alert-icon">ℹ️</div>
+                  <div class="alert-text">
+                    <strong>Pharmacy Restock</strong>
+                    <span>Metformin 500mg stock below minimum.</span>
+                  </div>
+                  <div class="alert-time">1h ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Stats -->
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Dept. Performance</div>
+                <div class="card-sub">Efficiency scores · This week</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="prog-row">
+                <div class="prog-head"><span class="prog-label">Emergency</span><span class="prog-pct">94%</span></div>
+                <div class="prog-track"><div class="prog-fill" style="width:94%;background:var(--accent)"></div></div>
+              </div>
+              <div class="prog-row">
+                <div class="prog-head"><span class="prog-label">Cardiology</span><span class="prog-pct">88%</span></div>
+                <div class="prog-track"><div class="prog-fill" style="width:88%;background:var(--blue)"></div></div>
+              </div>
+              <div class="prog-row">
+                <div class="prog-head"><span class="prog-label">ICU</span><span class="prog-pct">76%</span></div>
+                <div class="prog-track"><div class="prog-fill" style="width:76%;background:var(--warn)"></div></div>
+              </div>
+              <div class="prog-row">
+                <div class="prog-head"><span class="prog-label">Paediatrics</span><span class="prog-pct">91%</span></div>
+                <div class="prog-track"><div class="prog-fill" style="width:91%;background:#7c3aed"></div></div>
+              </div>
+              <div class="prog-row" style="margin-bottom:0">
+                <div class="prog-head"><span class="prog-label">Gen. Medicine</span><span class="prog-pct">83%</span></div>
+                <div class="prog-track"><div class="prog-fill" style="width:83%;background:var(--accent)"></div></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<script>
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('overlay');
+  const isMobile = () => window.innerWidth <= 768;
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.style.display = 'block';
+    // Lock body scroll so only sidebar scrolls on mobile
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function toggleSidebar() {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  }
+
+  // Overlay tap closes sidebar
+  overlay.addEventListener('click',      closeSidebar);
+  overlay.addEventListener('touchstart', closeSidebar, { passive: true });
+
+  // Prevent sidebar scroll from bubbling to body (iOS bounce fix)
+  sidebar.addEventListener('touchmove', (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+
+  // Nav item interactions — works for both mouse and touch
+  document.querySelectorAll('.nav-item').forEach(item => {
+    // Use pointerup so it fires reliably on both touch and mouse
+    item.addEventListener('pointerup', (e) => {
+      e.stopPropagation(); // don't let tap bleed through to overlay
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+      // On mobile, close the sidebar after selecting a nav item
+      if (isMobile()) {
+        // Small delay so user sees the active highlight before drawer closes
+        setTimeout(closeSidebar, 180);
+      }
+    });
+  });
+
+  // Re-show overlay correctly if resized above mobile breakpoint
+  window.addEventListener('resize', () => {
+    if (!isMobile()) {
+      overlay.style.display = 'none';
+      document.body.style.overflow = '';
+      sidebar.classList.remove('open');
+    }
+  });
+
+  // Live clock in subtitle
+  function updateTime() {
+    const el = document.querySelector('.page-subtitle');
+    if (el) {
+      const now = new Date();
+      const t = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      el.textContent = `LIVE · Updated ${t} · Q2 2025`;
+    }
+  }
+  setInterval(updateTime, 30000);
+</script>
+</body>
+</html>
